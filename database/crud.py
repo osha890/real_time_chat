@@ -1,9 +1,9 @@
 from fastapi import HTTPException
 from pymongo.errors import DuplicateKeyError
 
-from database import user_collection
-from models import UserCreate
-from security import get_password_hash
+from .db_conf import user_collection
+from .models import UserCreate
+from .security import get_password_hash
 
 
 # Функции для работы с MongoDB
