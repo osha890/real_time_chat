@@ -21,3 +21,10 @@ async def create_user(user: UserCreate):
         return user_dict
     except DuplicateKeyError:
         raise HTTPException(status_code=400, detail="Username already registered")
+
+
+async def save_refresh_token(username, refresh_token):
+    await user_collection.update_one(
+        {"username": username},
+        {"$set": {"refresh_token": refresh_token}}
+    )

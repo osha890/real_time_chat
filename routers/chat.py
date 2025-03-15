@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from .websocket_manager import manager
+from websocket_manager import manager
 from database.crud import get_user_by_username
 
 router = APIRouter()
