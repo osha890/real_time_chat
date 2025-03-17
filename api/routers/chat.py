@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 
 from api.user_tools import get_current_user_payload, get_token_from_websocket
-from websocket_manager import manager
+from api.websocket_manager import manager
 
 router = APIRouter()
 
@@ -21,8 +21,9 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+            recipient = data.get("recipient")
             message = data.get("message")
-            if message:
-                await manager.send_message(username, data["message"])
+            if message and recipient:
+                await manager.send_message(username, recipient, message)
     except WebSocketDisconnect:
         manager.disconnect(username)
