@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pymongo.errors import DuplicateKeyError
 
-from .db_conf import user_collection, message_collection
+from .db_conf import user_collection, messages_collection
 from .models import UserCreate
 from .security import get_password_hash
 
@@ -29,5 +29,22 @@ async def save_refresh_token(username, refresh_token):
         {"$set": {"refresh_token": refresh_token}}
     )
 
-async def save_message_doc(message):
-    await message_collection.insert_one(message)
+
+async def save_message_doc(message: dict):
+    return await messages_collection.insert_one(message)
+
+
+async def update_message_to_delivered(message_id: str):
+    # Помечаем сообщение как "доставленное"
+    await messages_collection.update_one(
+        {"_id": message_id}, {"$set": {"delivered": True}}
+    )
+
+async def update_recipients_messages_to_delivered(recipient):
+    # Обновляем статус "доставлено" в MongoDB
+    await messages_collection.update_many(
+        {"recipient": recipient, "delivered": False}, {"$set": {"delivered": True}}
+    )
+
+async def get_undelivered_messages(username):
+    return await messages_collection.find({"recipient": username, "delivered": False}).to_list(100)
