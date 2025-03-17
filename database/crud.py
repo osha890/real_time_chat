@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pymongo.errors import DuplicateKeyError
 
-from .db_conf import user_collection
+from .db_conf import user_collection, message_collection
 from .models import UserCreate
 from .security import get_password_hash
 
@@ -28,3 +28,6 @@ async def save_refresh_token(username, refresh_token):
         {"username": username},
         {"$set": {"refresh_token": refresh_token}}
     )
+
+async def save_message_doc(message):
+    await message_collection.insert_one(message)
