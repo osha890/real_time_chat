@@ -1,5 +1,6 @@
 from typing import Dict
 from fastapi import WebSocket
+from database.crud import update_message_to_delivered
 
 
 class ConnectionManager:
@@ -13,10 +14,11 @@ class ConnectionManager:
     def disconnect(self, username: str):
         self.active_connections.pop(username, None)
 
-    async def send_message(self, sender: str, recipient: str, message: str):
+    async def send_message(self, sender: str, recipient: str, message: str, message_doc_id: str):
         ws = self.active_connections.get(recipient)
         if ws:
             await ws.send_json({"sender": sender, "message": message})
+            await update_message_to_delivered(message_doc_id)
 
 
 manager = ConnectionManager()

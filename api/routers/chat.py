@@ -6,8 +6,6 @@ from api.websocket_manager import manager
 
 from database.crud import (
     save_message_doc,
-    update_message_to_delivered,
-    update_recipients_messages_to_delivered,
     get_undelivered_messages,
     get_user_by_username,
 )
@@ -17,8 +15,9 @@ router = APIRouter()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """Подключает пользователя к websocket"""
+    """Работа с websocket"""
 
+    # Подключаем пользователя к websocket
     token = await get_token_from_websocket(websocket)
     user = get_current_user_payload(token)
     username = user.get("sub")
@@ -27,12 +26,15 @@ async def websocket_endpoint(websocket: WebSocket):
 
     await manager.connect(username, websocket)
 
-    # Проверяем и помечаем сообщения как "доставленные"
+    # Отправляем неотправленные сообщения
     undelivered_messages = await get_undelivered_messages(username)
-    if undelivered_messages:
-        for msg in undelivered_messages:
-            await websocket.send_json({"sender": msg["sender"], "message": msg["message"]})
-        await update_recipients_messages_to_delivered(username)
+    for msg in undelivered_messages:
+        await manager.send_message(
+            sender=msg.get("sender"),
+            recipient=msg.get("recipient"),
+            message=msg.get("message"),
+            message_doc_id=msg.get("_id")
+        )
 
     try:
         while True:
@@ -54,7 +56,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # Формируем chat_id (например, userA_userB)
             chat_id = "_".join(sorted([username, recipient]))
 
-            # Сохраняем сообщение в MongoDB
+            # Создаем сообщение
             message_doc = {
                 "chat_id": chat_id,
                 "sender": username,
@@ -64,13 +66,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 "delivered": False
             }
 
+            # Сохраняем сообщение в MongoDB
             result = await save_message_doc(message_doc)
 
             # Отправляем сообщение, если получатель онлайн
             if recipient in manager.active_connections:
-                await manager.send_message(username, recipient, message)
-                await update_message_to_delivered(result.inserted_id)
-
+                await manager.send_message(
+                    sender=username,
+                    recipient=recipient,
+                    message=message,
+                    message_doc_id=result.inserted_id
+                )
 
     except WebSocketDisconnect:
         manager.disconnect(username)
