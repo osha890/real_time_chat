@@ -23,7 +23,7 @@ async def create_user(user: UserCreate):
         raise HTTPException(status_code=400, detail="Username already registered")
 
 
-async def save_refresh_token(username, refresh_token):
+async def save_refresh_token(username: str, refresh_token: str):
     await user_collection.update_one(
         {"username": username},
         {"$set": {"refresh_token": refresh_token}}
@@ -40,11 +40,11 @@ async def update_message_to_delivered(message_id: str):
         {"_id": message_id}, {"$set": {"delivered": True}}
     )
 
-async def update_recipients_messages_to_delivered(recipient):
+async def update_recipients_messages_to_delivered(recipient: str):
     # Обновляем статус "доставлено" в MongoDB
     await messages_collection.update_many(
         {"recipient": recipient, "delivered": False}, {"$set": {"delivered": True}}
     )
 
-async def get_undelivered_messages(username):
+async def get_undelivered_messages(username: str):
     return await messages_collection.find({"recipient": username, "delivered": False}).to_list(100)

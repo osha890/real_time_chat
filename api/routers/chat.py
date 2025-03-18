@@ -4,7 +4,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from api.user_tools import get_current_user_payload, get_token_from_websocket
 from api.websocket_manager import manager
 
-from database.crud import save_message_doc, update_message_to_delivered, update_recipients_messages_to_delivered, get_undelivered_messages
+from database.crud import (
+    save_message_doc,
+    update_message_to_delivered,
+    update_recipients_messages_to_delivered,
+    get_undelivered_messages,
+    get_user_by_username,
+)
 
 router = APIRouter()
 
@@ -32,9 +38,17 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
             recipient = data.get("recipient")
-            message = data.get("message")
+            if not recipient:
+                await websocket.send_json({"error": "Field 'recipient' is required"})
+                continue
 
-            if not message or not recipient:
+            message = data.get("message")
+            if not message:
+                await websocket.send_json({"error": "Field 'message' is required"})
+                continue
+
+            if not await get_user_by_username(recipient):
+                await websocket.send_json({"error": "Recipient does not exist"})
                 continue
 
             # Формируем chat_id (например, userA_userB)
@@ -47,7 +61,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "recipient": recipient,
                 "message": message,
                 "timestamp": datetime.now(timezone.utc),
-                "delivered": False  # Изначально сообщение недоставлено
+                "delivered": False
             }
 
             result = await save_message_doc(message_doc)
