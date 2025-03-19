@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from pymongo.errors import PyMongoError
 
 from api.services.user_service import get_current_user_payload, get_token_from_websocket
 from api.services.chat_service import send_undelivered_messages, handle_incoming_message
@@ -21,11 +22,19 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(username, websocket)
 
     # Отправляем неотправленные сообщения
-    await send_undelivered_messages(username)
+    try:
+        await send_undelivered_messages(username)
+    except PyMongoError as e:
+        await websocket.send_json({"error": f"Database error: {str(e)}"})
+        raise WebSocketDisconnect(code=1006)
 
     try:
         while True:
-            await handle_incoming_message(websocket, username)
+            try:
+                await handle_incoming_message(websocket, username)
+            except PyMongoError as e:
+                await websocket.send_json({"error": f"Database error: {str(e)}"})
+                raise WebSocketDisconnect(code=1006)
 
 
     except WebSocketDisconnect:

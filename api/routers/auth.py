@@ -1,7 +1,7 @@
 from fastapi import HTTPException, APIRouter, Depends
 
 from api.services.user_service import get_current_user_payload
-from database.crud import get_user_by_username, create_user, save_refresh_token
+from database.crud import get_user_by_username, save_user, save_refresh_token
 from database.models import UserCreate
 from database.schemas import UserOut
 from database.security import verify_password
@@ -19,7 +19,7 @@ async def register(user: UserCreate):
     db_user = await get_user_by_username(user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    return await create_user(user)
+    return await save_user(user)
 
 
 @router.post("/token/")

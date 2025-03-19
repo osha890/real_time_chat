@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
 from .db_conf import user_collection, messages_collection
 from .models import UserCreate
@@ -13,7 +13,7 @@ async def get_user_by_username(username: str):
     return user
 
 
-async def create_user(user: UserCreate):
+async def save_user(user: UserCreate):
     user_dict = {"username": user.username, "password_hash": get_password_hash(user.password)}
     try:
         result = await user_collection.insert_one(user_dict)
@@ -31,7 +31,8 @@ async def save_refresh_token(username: str, refresh_token: str):
 
 
 async def save_message_doc(message: dict):
-    return await messages_collection.insert_one(message)
+    result = await messages_collection.insert_one(message)
+    return result
 
 
 async def update_message_to_delivered(message_doc_id: str):
@@ -42,4 +43,5 @@ async def update_message_to_delivered(message_doc_id: str):
 
 
 async def get_undelivered_messages(username: str):
-    return await messages_collection.find({"recipient": username, "delivered": False}).to_list(100)
+    messages = await messages_collection.find({"recipient": username, "delivered": False}).to_list(100)
+    return messages
