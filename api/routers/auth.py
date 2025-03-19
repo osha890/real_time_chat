@@ -1,6 +1,6 @@
 from fastapi import HTTPException, APIRouter, Depends
 
-from api.user_tools import get_current_user_payload
+from api.services.user_service import get_current_user_payload
 from database.crud import get_user_by_username, create_user, save_refresh_token
 from database.models import UserCreate
 from database.schemas import UserOut

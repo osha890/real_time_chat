@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 
