@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from pymongo.errors import DuplicateKeyError, PyMongoError
+from pymongo.errors import DuplicateKeyError
 
 from .db_conf import user_collection, messages_collection
 from .models import UserCreate
