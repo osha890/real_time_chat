@@ -3,9 +3,11 @@ from datetime import datetime, timedelta, timezone
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 
-def create_token(data: dict, time: timedelta):
+def create_token(data: dict, expire_time: timedelta):
+    """Создание токена действителен на время time"""
+
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + time
+    expire = datetime.now(timezone.utc) + expire_time
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
