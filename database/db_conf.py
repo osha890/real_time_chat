@@ -9,7 +9,7 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 DATABASE_NAME = os.getenv("MONGO_DB_NAME")
 client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-database = client[DATABASE_NAME]
+database = client[str(DATABASE_NAME)]
 
 user_collection = database["users"]
 messages_collection = database["messages"]
