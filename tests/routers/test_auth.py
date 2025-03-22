@@ -15,7 +15,6 @@ mock_db_user = {"username": "testuser", "password_hash": "hashed_password"}
 mock_saved_user = {"_id": "mockid", "username": "testuser", "password_hash": "hashed_password"}
 
 
-
 # ========================== /register/ test ==========================
 
 @patch(f"{AUTH_MODULE}.save_user")
@@ -38,7 +37,6 @@ def test_register(mock_get_user_by_username, mock_save_user):
     # Проверяем, что моки были вызваны
     mock_get_user_by_username.assert_called_once_with("testuser")
     mock_save_user.assert_called_once()
-
 
 
 @patch(f"{AUTH_MODULE}.save_user")
@@ -108,3 +106,44 @@ async def test_login_invalid_credentials(mock_get_user_by_username, mock_verify_
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid credentials"
+
+
+# ========================== /refresh/ test ==========================
+
+@pytest.mark.asyncio
+@patch(f"{AUTH_MODULE}.get_user_by_username", new_callable=AsyncMock)
+@patch(f"{AUTH_MODULE}.verify_token", new_callable=Mock)
+async def test_refresh_success(mock_verify_token, mock_get_user_by_username):
+    mock_verify_token.return_value = {"sub": "testuser"}
+    mock_get_user_by_username.return_value = {"refresh_token": "qwe123"}
+
+    response = client.post("/refresh/", params={"refresh_token": "qwe123"})
+
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+
+@pytest.mark.asyncio
+@patch(f"{AUTH_MODULE}.get_user_by_username", new_callable=AsyncMock)
+@patch(f"{AUTH_MODULE}.verify_token", new_callable=Mock)
+async def test_refresh_invalid_credentials(mock_verify_token, mock_get_user_by_username):
+    mock_verify_token.return_value = None
+    mock_get_user_by_username.return_value = {"refresh_token": "qwe123"}
+
+    response = client.post("/refresh/", params={"refresh_token": "qwe123"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid refresh token"
+
+
+@pytest.mark.asyncio
+@patch(f"{AUTH_MODULE}.get_user_by_username", new_callable=AsyncMock)
+@patch(f"{AUTH_MODULE}.verify_token", new_callable=Mock)
+async def test_refresh_no_user(mock_verify_token, mock_get_user_by_username):
+    mock_verify_token.return_value = {"sub": "testuser"}
+    mock_get_user_by_username.return_value = None
+
+    response = client.post("/refresh/", params={"refresh_token": "qwe123"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid refresh token"
