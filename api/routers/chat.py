@@ -13,11 +13,15 @@ async def websocket_endpoint(websocket: WebSocket):
     """Работа с websocket"""
 
     # Подключаем пользователя к websocket
-    token = await get_token_from_websocket(websocket)
-    user = get_current_user_payload(token)
-    username = user.get("sub")
-    if not username:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    try:
+        token = await get_token_from_websocket(websocket)
+        user = get_current_user_payload(token)
+        username = user.get("sub")
+        if not username:
+            raise ValueError("Missing username in token payload")
+    except (ValueError, AttributeError):
+        await websocket.close(code=1008)
+        return
 
     await manager.connect(username, websocket)
 
@@ -26,7 +30,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await send_undelivered_messages(username)
     except PyMongoError as e:
         await websocket.send_json({"error": f"Database error: {str(e)}"})
-        raise WebSocketDisconnect(code=1006)
+        await websocket.close(code=1011)
+        return
 
     try:
         while True:
@@ -34,8 +39,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 await handle_incoming_message(websocket, username)
             except PyMongoError as e:
                 await websocket.send_json({"error": f"Database error: {str(e)}"})
-                raise WebSocketDisconnect(code=1006)
-
-
-    except WebSocketDisconnect:
-        manager.disconnect(username)
+                break  # Выход из цикла при ошибке БД
+            except WebSocketDisconnect:
+                break  # Выход при отключении клиента
+    finally:
+        manager.disconnect(username)  # Очистка соединения
