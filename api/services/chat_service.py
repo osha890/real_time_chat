@@ -32,8 +32,7 @@ async def handle_incoming_message(websocket: WebSocket, username: str):
         await websocket.send_json({"error": "Recipient does not exist"})
         return
 
-    # Формируем chat_id (например, userA_userB)
-    chat_id = "_".join(sorted([username, recipient]))
+    chat_id = get_chat_id(username, recipient)
 
     # Создаем сообщение
     message_doc = {
@@ -56,3 +55,8 @@ async def handle_incoming_message(websocket: WebSocket, username: str):
             message=message,
             message_doc_id=result.inserted_id
         )
+
+
+def get_chat_id(username: str, recipient: str) -> str:
+    """Формирует chat_id (например, userA_userB)"""
+    return "_".join(sorted([username, recipient]))

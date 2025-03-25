@@ -21,7 +21,6 @@ async def get_token_from_websocket(websocket) -> Optional[str]:
 
     token = websocket.headers.get("Authorization")
     if not token or not token.startswith("Bearer "):
-        await websocket.close(code=403)
         return None
 
     return token.split("Bearer ")[1]

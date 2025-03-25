@@ -1,9 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from pymongo.errors import PyMongoError
 
 from api.services.user_service import get_current_user_payload, get_token_from_websocket
-from api.services.chat_service import send_undelivered_messages, handle_incoming_message
+from api.services.chat_service import send_undelivered_messages, handle_incoming_message, get_chat_id
 from api.services.websocket_manager import manager
+from database.crud import get_user_by_username, get_chat_messages_by_chat_id
 
 router = APIRouter()
 
@@ -44,3 +45,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 break  # Выход при отключении клиента
     finally:
         manager.disconnect(username)  # Очистка соединения
+
+
+@router.get("/chat/")
+async def get_chat_history(recipient: str, payload: dict = Depends(get_current_user_payload)):
+    """Получение истории чата"""
+    username = payload.get("sub")
+    if not await get_user_by_username(recipient):
+        raise HTTPException(status_code=404, detail="Recipient not found")
+    chat_id = get_chat_id(username, recipient)
+    messages = await get_chat_messages_by_chat_id(chat_id)
+    answer = [
+        {
+            "sender": msg.get("sender"),
+            "message": msg.get("message"),
+            "timestamp": msg.get("timestamp")
+        }
+        for msg in messages
+    ]
+    return {f"{chat_id}": answer}

@@ -45,3 +45,8 @@ async def update_message_to_delivered(message_doc_id: str):
 async def get_undelivered_messages(username: str):
     messages = await messages_collection.find({"recipient": username, "delivered": False}).to_list(100)
     return messages
+
+
+async def get_chat_messages_by_chat_id(chat_id: str):
+    messages = await messages_collection.find({"chat_id": chat_id}).to_list(100)
+    return messages
