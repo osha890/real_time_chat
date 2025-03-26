@@ -55,7 +55,7 @@ async def get_chat_history(recipient: str, payload: dict = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Recipient not found")
     chat_id = get_chat_id(username, recipient)
     messages = await get_chat_messages_by_chat_id(chat_id)
-    answer = [
+    message_list_to_response = [  # Формируем ответ
         {
             "sender": msg.get("sender"),
             "message": msg.get("message"),
@@ -63,4 +63,4 @@ async def get_chat_history(recipient: str, payload: dict = Depends(get_current_u
         }
         for msg in messages
     ]
-    return {f"{chat_id}": answer}
+    return {f"{chat_id}": message_list_to_response}
